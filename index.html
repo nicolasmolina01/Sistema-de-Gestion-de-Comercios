@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kiosco La Esquina — Gestión de Stock</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Gestión de Stock — <span id="store-title-name">Kiosco La Esquina</span></h1>
+      <p class="subtitle">Registrar mercadería con lector de códigos, calcular precios y mantener el listado actualizado.</p>
+      <img id="store-logo" class="store-logo" alt="Foto del comercio" hidden />
+      <nav class="app-nav" aria-label="Navegación">
+        <button class="nav-btn" data-view-btn="home">Principal</button>
+        <button class="nav-btn" data-view-btn="products">Productos</button>
+        <button class="nav-btn" data-view-btn="inventory">Inventario</button>
+        <button class="nav-btn" data-view-btn="sales">Ventas</button>
+        <button class="nav-btn" data-view-btn="finance">Finanzas</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card" data-view="home">
+        <h2>Principal</h2>
+        <p>Usá la barra superior para navegar por Productos, Ventas y Finanzas. Acá podés ver de un vistazo el estado general del sistema.</p>
+        <div class="store-profile">
+          <h3>Perfil del comercio</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="store-name">Nombre del comercio</label>
+              <input id="store-name" type="text" placeholder="Ej. Kiosco La Esquina" />
+              <button id="store-restore-default" class="btn" type="button">Restaurar nombre por defecto</button>
+            </div>
+            <div class="form-field">
+              <label for="store-address">Dirección</label>
+              <input id="store-address" type="text" placeholder="Ej. Av. Siempre Viva 742, Ciudad" />
+            </div>
+            <div class="form-field">
+              <label for="store-photo">Foto del local</label>
+              <input id="store-photo" type="file" accept="image/*" />
+              <button id="store-remove-photo" class="btn danger" type="button">Quitar foto</button>
+            </div>
+            <div class="form-field full">
+              <img id="store-preview" class="store-preview" alt="Vista previa" hidden />
+            </div>
+            <div class="form-actions full">
+              <button id="store-save" class="btn primary" type="button">Guardar perfil</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" data-view="products">
+        <h2>Alta de producto</h2>
+        <form id="product-form" class="form-grid" autocomplete="off">
+          <div class="form-field full">
+            <label for="barcode">Código de barras</label>
+            <input id="barcode" name="barcode" type="text" inputmode="numeric" placeholder="Escaneá el código o escribilo" required autofocus />
+            <small class="hint">Usá el lector: al escanear, el campo se completa automáticamente.</small>
+          </div>
+
+          <div class="form-field">
+            <label for="name">Nombre</label>
+            <input id="name" name="name" type="text" placeholder="Ej. Galletitas Chocolinas 170g" required />
+          </div>
+
+          <div class="form-field">
+            <label for="quantity">Cantidad</label>
+            <input id="quantity" name="quantity" type="number" min="0" step="1" placeholder="Ej. 12" value="1" />
+          </div>
+
+          <div class="form-field">
+            <label for="category">Categoría</label>
+            <input id="category" name="category" type="text" placeholder="Ej. Almacén, Bebidas, Golosinas" />
+          </div>
+
+          <div class="form-field full">
+            <label for="description">Descripción breve</label>
+            <textarea id="description" name="description" rows="2" placeholder="Notas opcionales: marca, tamaño, sabor, etc."></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="expiryDate">Fecha de vencimiento</label>
+            <input id="expiryDate" name="expiryDate" type="date" />
+          </div>
+
+          <div class="form-field">
+            <label for="cost">Precio de costo</label>
+            <input id="cost" name="cost" type="number" min="0" step="0.01" placeholder="Ej. 1200.00" required />
+          </div>
+
+          <div class="form-field">
+            <label for="margin">% de ganancia</label>
+            <input id="margin" name="margin" type="number" min="0" step="1" placeholder="Ej. 35" required />
+          </div>
+
+          <div class="form-field">
+            <label for="price">Precio de venta (auto)</label>
+            <input id="price" name="price" type="number" min="0" step="0.01" placeholder="Calculado automáticamente" readonly />
+          </div>
+
+          <div class="form-field">
+            <label>Ganancia unitaria</label>
+            <output id="profit" class="output">—</output>
+          </div>
+
+          <div class="form-actions full">
+            <button type="submit" class="btn primary">Guardar producto</button>
+            <button type="reset" class="btn">Limpiar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" data-view="inventory">
+        <div class="list-header">
+          <div class="list-title">
+            <h2>Inventario</h2>
+            <div id="expiry-alert" class="badge" hidden></div>
+          </div>
+          <div class="tools">
+            <input id="search" type="search" placeholder="Buscar por nombre o código" />
+            <button id="export" class="btn">Exportar JSON</button>
+            <button id="export-csv-inventory" class="btn">Exportar CSV</button>
+            <button id="clear" class="btn danger">Vaciar inventario</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" id="product-table" aria-describedby="Inventario de productos">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Costo</th>
+                <th>Margen %</th>
+                <th>Precio venta</th>
+                <th>Ganancia</th>
+                <th>Vence</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" data-view="sales">
+        <h2>Ventas</h2>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="sale-barcode">Código de barras (venta)</label>
+            <input id="sale-barcode" type="text" placeholder="Escaneá o escribí el código" />
+          </div>
+          <div class="form-field">
+            <label for="sale-quantity">Cantidad</label>
+            <input id="sale-quantity" type="number" min="1" step="1" value="1" />
+          </div>
+          <div class="form-field">
+            <label for="sale-iva">IVA</label>
+            <select id="sale-iva">
+              <option value="21">21%</option>
+              <option value="10.5">10.5%</option>
+              <option value="0">0%</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="sale-pay-method">Método de pago</label>
+            <select id="sale-pay-method">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+              <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+              <option value="Transferencia">Transferencia</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button id="add-to-cart" class="btn primary">Agregar al carrito</button>
+            <button id="clear-cart" class="btn">Vaciar carrito</button>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:12px;">
+          <table class="table" id="cart-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Mercadería</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>IVA %</th>
+                <th>IVA</th>
+                <th>Subtotal</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cart-body"></tbody>
+          </table>
+        </div>
+
+        <div class="totals">
+          <div><strong>Subtotal:</strong> <span id="total-net">$0</span></div>
+          <div><strong>IVA:</strong> <span id="total-iva">$0</span></div>
+          <div><strong>Total:</strong> <span id="total-gross">$0</span></div>
+          <div class="form-actions" style="margin-top:8px;">
+            <button id="confirm-sale" class="btn primary">Confirmar venta y actualizar stock</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" data-view="finance">
+        <div class="list-header">
+          <h2>Historial de ventas</h2>
+          <div class="tabs" role="tablist" aria-label="Filtros de periodo">
+            <button id="hist-daily" class="btn" role="tab" aria-selected="true">Diario</button>
+            <button id="hist-weekly" class="btn" role="tab" aria-selected="false">Semanal (7 días)</button>
+            <button id="hist-monthly" class="btn" role="tab" aria-selected="false">Mensual</button>
+          </div>
+        </div>
+
+        <div class="period-controls">
+          <div id="control-daily">
+            <label for="hist-daily-date">Fecha</label>
+            <input id="hist-daily-date" type="date" />
+          </div>
+          <div id="control-weekly" hidden>
+            <label for="hist-week-week">Semana</label>
+            <input id="hist-week-week" type="week" />
+          </div>
+          <div id="control-monthly" hidden>
+            <label for="hist-month-month">Mes</label>
+            <input id="hist-month-month" type="month" />
+          </div>
+        </div>
+
+        <div class="filters" style="margin-top:8px;">
+          <div>
+            <label for="hist-category">Categoría</label>
+            <select id="hist-category">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div>
+            <button id="hist-export-csv" class="btn">Exportar Top CSV</button>
+            <button id="hist-clear" class="btn danger">Vaciar historial</button>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div><strong>Ganancia:</strong> <span id="hist-profit">$0</span></div>
+          <div><strong>Unidades vendidas:</strong> <span id="hist-units">0</span></div>
+          <div><strong>Ventas realizadas:</strong> <span id="hist-orders">0</span></div>
+        </div>
+
+        <div class="chart-wrap" style="margin-top:12px;">
+          <canvas id="hist-chart" width="800" height="300" aria-label="Top productos por unidades" role="img"></canvas>
+        </div>
+
+        <div class="table-wrap" style="margin-top:12px;">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Unidades vendidas</th>
+                <th>Ganancia</th>
+              </tr>
+            </thead>
+            <tbody id="hist-top-body"></tbody>
+          </table>
+        </div>
+
+        <div class="summary" style="margin-top:12px;">
+          <div><strong>Menor movimiento:</strong> <span id="hist-least">—</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <small>Hecho con ❤️ para un flujo rápido de carga de mercadería en kioscos y mercados.</small>
+    </footer>
+
+    <!-- Toast notifications container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+  </body>
+  </html>
